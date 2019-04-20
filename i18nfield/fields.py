@@ -2,7 +2,7 @@ import json
 
 import django
 from django.conf import settings
-from django.db import models
+from django.contrib.postgres.fields import JSONField
 
 from .forms import I18nFormField, I18nTextarea, I18nTextInput
 from .strings import LazyI18nString
@@ -48,7 +48,7 @@ class I18nFieldMixin:
         return super().formfield(**defaults)
 
 
-class I18nCharField(I18nFieldMixin, models.TextField):
+class I18nCharField(I18nFieldMixin, JSONField):
     """
     A CharField which takes internationalized data. Internally, a TextField dabase
     field is used to store JSON. If you interact with this field, you will work
@@ -57,7 +57,7 @@ class I18nCharField(I18nFieldMixin, models.TextField):
     widget = I18nTextInput
 
 
-class I18nTextField(I18nFieldMixin, models.TextField):
+class I18nTextField(I18nFieldMixin, JSONField):
     """
     Like I18nCharField, but for TextFields.
     """
