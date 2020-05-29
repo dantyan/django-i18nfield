@@ -1,9 +1,9 @@
 import json
-from typing import Dict, Optional, Union, Iterable
+from typing import Dict, Optional, Union
 
 from django.conf import settings
 from django.utils import translation
-from django.utils.translation import override, ugettext
+from django.utils.translation import gettext, override
 
 
 class LazyI18nString:
@@ -62,7 +62,10 @@ class LazyI18nString:
 
         if isinstance(self.data, dict):
             firstpart = lng.split('-')[0]
-            similar = [l for l in self.data.keys() if (l.startswith(firstpart + "-") or firstpart == l) and l != lng]
+            similar = [
+                loc for loc in self.data.keys()
+                if (loc.startswith(firstpart + "-") or firstpart == loc) and loc != lng
+            ]
             if self.data.get(lng):
                 return self.data[lng]
             elif self.data.get(firstpart):
@@ -73,12 +76,20 @@ class LazyI18nString:
                         return self.data.get(s)
             elif self.data.get(settings.LANGUAGE_CODE):
                 return self.data[settings.LANGUAGE_CODE]
-            elif len(self.data):
-                return list(self.data.items())[0][1]
             else:
-                return ""
+                filled = [f for f in self.data.values() if f]
+                if filled:
+                    return filled[0]
+                else:
+                    return ""
         else:
             return str(self.data)
+
+    def map(self, f):
+        """
+        Apply a transformation function f to all translations.
+        """
+        self.data = {k: f(v) for k, v in self.data.items()}
 
     def __repr__(self) -> str:  # NOQA
         return '<LazyI18nString: %s>' % repr(self.data)
@@ -102,19 +113,19 @@ class LazyI18nString:
 
         def __getitem__(self, item):
             with override(item):
-                return str(ugettext(self.lazygettext))
+                return str(gettext(self.lazygettext))
 
         def __contains__(self, item):
             return True
 
         def __str__(self):
-            return str(ugettext(self.lazygettext))
+            return str(gettext(self.lazygettext))
 
         def __repr__(self):  # NOQA
             return '<LazyGettextProxy: %s>' % repr(self.lazygettext)
 
     @classmethod
     def from_gettext(cls, lazygettext) -> 'LazyI18nString':
-        l = LazyI18nString({})
-        l.data = cls.LazyGettextProxy(lazygettext)
-        return l
+        result = LazyI18nString({})
+        result.data = cls.LazyGettextProxy(lazygettext)
+        return result
